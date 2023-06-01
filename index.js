@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const express = require("express");
 const app = express();
@@ -44,6 +44,13 @@ async function run() {
       res.send(result);
     });
 
+    // get single room details
+    app.get("/rooms/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const result = await roomsCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
     // post room data to the server
     app.post("/rooms", async (req, res) => {
       const roomInfo = req.body;
