@@ -38,6 +38,18 @@ async function run() {
       const result = await usersCollection.updateOne(query, updateDoc, options);
       res.send(result);
     });
+    // get all rooms from db
+    app.get("/rooms", async (req, res) => {
+      const result = await roomsCollection.find().toArray();
+      res.send(result);
+    });
+
+    // post room data to the server
+    app.post("/rooms", async (req, res) => {
+      const roomInfo = req.body;
+      const result = await roomsCollection.insertOne(roomInfo);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
