@@ -58,6 +58,53 @@ async function run() {
       res.send(result);
     });
 
+    // post bookings details in the db
+    app.post("/bookings", async (req, res) => {
+      const bookingInfo = req.body;
+      const result = await bookingsCollection.insertOne(bookingInfo);
+      res.send(result);
+    });
+
+    // get bookings details from db
+    app.get("/bookings/:email", async (req, res) => {
+      const email = req.params.email;
+      if (!email) {
+        res.send([]);
+      }
+      const query = { "guest.email": email };
+      const result = await bookingsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // delete a booking
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // update room booking status
+    app.patch("/rooms/status/:id", async (req, res) => {
+      const id = req.params.id;
+      const status = req.body.status;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          booked: status,
+        },
+      };
+      const update = await roomsCollection.updateOne(query, updateDoc);
+      res.send(update);
+    });
+
+    // get user information
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await usersCollection.findOne({ email: email });
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Database connected");
