@@ -6,6 +6,7 @@ const port = process.env.PORT || 5000;
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const morgan = require("morgan");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
@@ -45,9 +46,26 @@ async function run() {
     const usersCollection = client.db("airCncDb").collection("users");
     const bookingsCollection = client.db("airCncDb").collection("bookings");
 
+    // generate client secret
+
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    // create payment intent
+    app.post("/create-payment-intent", verifyJwt, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseFloat(price) * 100;
+      if (!price) return;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
     // jwt process
 
     app.post("/jwt", (req, res) => {
