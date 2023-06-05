@@ -21,6 +21,23 @@ const client = new MongoClient(uri, {
   },
 });
 
+const verifyJwt = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  const token = authorization.split(" ")[1];
+  // if (!authorization) {
+  //   res.status(401).send({message: 'Unauthorized'})
+  // }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res
+        .status(401)
+        .send({ error: true, message: "Unauthorized Access" });
+    }
+    req.decoded = decoded;
+  });
+  next();
+};
+
 async function run() {
   try {
     const roomsCollection = client.db("airCncDb").collection("rooms");
@@ -71,6 +88,21 @@ async function run() {
       res.send(result);
     });
 
+    // get host added rooms
+    app.get("/rooms/host/:email", verifyJwt, async (req, res) => {
+      const decodedEmail = req.decoded.email;
+      const email = req.params.email;
+      if (email !== decodedEmail) {
+        return res
+          .status(403)
+          .send({ error: true, message: "Forbidden Access" });
+      }
+      const result = await roomsCollection
+        .find({ "host.email": email })
+        .toArray();
+
+      res.send(result);
+    });
     // delete room api
     app.delete("/rooms/:id", async (req, res) => {
       const id = req.params.id;
