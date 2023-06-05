@@ -3,9 +3,12 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const port = process.env.PORT || 5000;
+const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const morgan = require("morgan");
 app.use(cors());
 app.use(express.json());
+app.use(morgan("dev"));
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2cofc5d.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -17,6 +20,7 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
 async function run() {
   try {
     const roomsCollection = client.db("airCncDb").collection("rooms");
@@ -26,6 +30,15 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    // jwt process
+
+    app.post("/jwt", (req, res) => {
+      const email = req.body;
+      const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res.send({ token });
+    });
     // save user email and role in db
     app.put("/users/:email", async (req, res) => {
       const email = req.params.email;
@@ -55,6 +68,15 @@ async function run() {
     app.post("/rooms", async (req, res) => {
       const roomInfo = req.body;
       const result = await roomsCollection.insertOne(roomInfo);
+      res.send(result);
+    });
+
+    // delete room api
+    app.delete("/rooms/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const result = await roomsCollection.deleteOne(query);
       res.send(result);
     });
 
