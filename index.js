@@ -26,10 +26,11 @@ const client = new MongoClient(uri, {
 const verifyJwt = (req, res, next) => {
   const authorization = req.headers.authorization;
   console.log(authorization);
-  const token = authorization.split(" ")[1];
+
   if (!authorization) {
     return res.status(401).send({ message: "Unauthorized Access" });
   }
+  const token = authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
       return res
@@ -38,18 +39,6 @@ const verifyJwt = (req, res, next) => {
     }
     req.decoded = decoded;
   });
-  next();
-};
-
-// verify host
-const verifyHost = async (req, res, next) => {
-  const decodedEmail = req.decoded.email;
-  console.log(decodedEmail);
-  const query = { email: decodedEmail };
-  const user = await usersCollection.findOne(query);
-  if (user?.role !== "host") {
-    return res.status(403).send({ error: true, message: "Forbidden access" });
-  }
   next();
 };
 
@@ -85,6 +74,20 @@ async function run() {
     const bookingsCollection = client.db("airCncDb").collection("bookings");
 
     // generate client secret
+
+    // verify host
+    const verifyHost = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      console.log(decodedEmail);
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "host") {
+        return res
+          .status(403)
+          .send({ error: true, message: "Forbidden access" });
+      }
+      next();
+    };
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
@@ -139,7 +142,7 @@ async function run() {
       res.send(result);
     });
     // post room data to the server
-    app.post("/rooms", verifyHost, async (req, res) => {
+    app.post("/rooms", verifyJwt, verifyHost, async (req, res) => {
       const roomInfo = req.body;
       const result = await roomsCollection.insertOne(roomInfo);
       res.send(result);
