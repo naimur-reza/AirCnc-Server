@@ -41,6 +41,18 @@ const verifyJwt = (req, res, next) => {
   next();
 };
 
+// verify host
+const verifyHost = async (req, res, next) => {
+  const decodedEmail = req.decoded.email;
+  console.log(decodedEmail);
+  const query = { email: decodedEmail };
+  const user = await usersCollection.findOne(query);
+  if (user?.role !== "host") {
+    return res.status(403).send({ error: true, message: "Forbidden access" });
+  }
+  next();
+};
+
 // email sender
 const sendMail = (emailData, emailAddress) => {
   const transporter = nodemailer.createTransport({
@@ -127,7 +139,7 @@ async function run() {
       res.send(result);
     });
     // post room data to the server
-    app.post("/rooms", async (req, res) => {
+    app.post("/rooms", verifyHost, async (req, res) => {
       const roomInfo = req.body;
       const result = await roomsCollection.insertOne(roomInfo);
       res.send(result);
