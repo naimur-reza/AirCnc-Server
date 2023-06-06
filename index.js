@@ -90,7 +90,7 @@ async function run() {
     };
 
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     // create payment intent
     app.post("/create-payment-intent", verifyJwt, async (req, res) => {
@@ -148,6 +148,22 @@ async function run() {
       res.send(result);
     });
 
+    app.put("/rooms/:id", verifyJwt, async (req, res) => {
+      const room = req.body;
+      console.log(room);
+
+      const filter = { _id: new ObjectId(req.params.id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: room,
+      };
+      const result = await roomsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
     // get host added rooms
     app.get("/rooms/host/:email", verifyJwt, async (req, res) => {
       const decodedEmail = req.decoded.email;
